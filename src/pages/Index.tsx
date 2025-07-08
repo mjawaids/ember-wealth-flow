@@ -1,105 +1,161 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { AuthModal } from "@/components/AuthModal";
+import { useAuth } from "@/hooks/useAuth";
 import { 
   TrendingUp, 
-  Wallet, 
-  PieChart, 
-  Smartphone, 
   Shield, 
-  Zap,
+  BarChart3, 
+  Smartphone, 
   ArrowRight,
+  Check,
   Star,
-  CheckCircle,
   DollarSign,
-  BarChart3,
+  PieChart,
   Target
 } from "lucide-react";
-import { AuthModal } from "@/components/AuthModal";
-import { cn } from "@/lib/utils";
 
 const Index = () => {
-  const [authModal, setAuthModal] = useState<'signin' | 'signup' | null>(null);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (user) {
+      navigate('/dashboard');
+    }
+  }, [user, navigate]);
+
+  const handleAuthClick = (mode: 'signin' | 'signup') => {
+    setAuthMode(mode);
+    setShowAuthModal(true);
+  };
 
   const features = [
     {
-      icon: <Wallet className="h-8 w-8" />,
-      title: "Smart Account Management",
-      description: "Connect multiple accounts, track balances, and manage transfers seamlessly"
+      icon: <DollarSign className="h-8 w-8" />,
+      title: "Smart Expense Tracking",
+      description: "Automatically categorize and track your expenses with AI-powered insights."
     },
     {
       icon: <PieChart className="h-8 w-8" />,
-      title: "Intelligent Categories",
-      description: "Auto-categorize expenses with AI and create custom categories with subcategories"
+      title: "Visual Analytics",
+      description: "Beautiful charts and graphs to understand your spending patterns."
     },
     {
-      icon: <Zap className="h-8 w-8" />,
-      title: "Natural Language Input",
-      description: "Type '200 #Bank @Grocery eggs today' and watch magic happen"
-    },
-    {
-      icon: <BarChart3 className="h-8 w-8" />,
-      title: "Advanced Analytics",
-      description: "Beautiful charts, spending insights, and financial goal tracking"
-    },
-    {
-      icon: <Smartphone className="h-8 w-8" />,
-      title: "Offline-First PWA",
-      description: "Works offline, syncs online. Install on any device for native experience"
+      icon: <Target className="h-8 w-8" />,
+      title: "Goal Setting",
+      description: "Set and track your financial goals with personalized recommendations."
     },
     {
       icon: <Shield className="h-8 w-8" />,
       title: "Bank-Level Security",
-      description: "Your financial data is encrypted and secure with industry standards"
+      description: "Your financial data is protected with enterprise-grade encryption."
+    },
+    {
+      icon: <Smartphone className="h-8 w-8" />,
+      title: "Mobile Optimized",
+      description: "Access your finances anywhere with our responsive design."
+    },
+    {
+      icon: <BarChart3 className="h-8 w-8" />,
+      title: "Advanced Reports",
+      description: "Generate detailed reports to make informed financial decisions."
     }
   ];
 
   const testimonials = [
     {
       name: "Sarah Chen",
-      role: "Product Manager",
-      content: "Finally, a finance app that understands how I think. The natural language input is revolutionary!",
+      role: "Small Business Owner",
+      content: "FinanceFlow helped me organize my business finances and increase my savings by 40%.",
       rating: 5
     },
     {
-      name: "Mike Rodriguez",
+      name: "Michael Rodriguez",
       role: "Freelancer",
-      content: "Managing multiple income streams has never been easier. The dashboard gives me complete clarity.",
+      content: "The expense tracking features are incredible. I finally understand where my money goes.",
       rating: 5
     },
     {
-      name: "Emma Thompson",
-      role: "Student",
-      content: "Love the wallet feature for budgeting. Helps me stay on track with my monthly expenses.",
+      name: "Emily Johnson",
+      role: "Financial Advisor",
+      content: "I recommend FinanceFlow to all my clients. It's intuitive and powerful.",
       rating: 5
     }
   ];
 
+  const pricingPlans = [
+    {
+      name: "Free",
+      price: "$0",
+      period: "forever",
+      features: [
+        "Up to 100 transactions",
+        "Basic analytics",
+        "Mobile app access",
+        "Email support"
+      ],
+      popular: false
+    },
+    {
+      name: "Pro",
+      price: "$9",
+      period: "per month",
+      features: [
+        "Unlimited transactions",
+        "Advanced analytics",
+        "Goal tracking",
+        "Export reports",
+        "Priority support",
+        "Multiple accounts"
+      ],
+      popular: true
+    },
+    {
+      name: "Business",
+      price: "$29",
+      period: "per month",
+      features: [
+        "Everything in Pro",
+        "Team collaboration",
+        "Custom categories",
+        "API access",
+        "Dedicated support",
+        "Advanced security"
+      ],
+      popular: false
+    }
+  ];
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
       {/* Navigation */}
-      <nav className="relative z-50 bg-white/10 backdrop-blur-lg border-b border-white/20">
+      <nav className="bg-white/80 backdrop-blur-lg border-b border-gray-200/50 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-2">
-              <div className="h-8 w-8 bg-gradient-to-r from-blue-400 to-purple-500 rounded-lg flex items-center justify-center">
+              <div className="h-8 w-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
                 <TrendingUp className="h-5 w-5 text-white" />
               </div>
-              <span className="text-xl font-bold text-white">FinanceFlow</span>
+              <span className="text-xl font-bold text-gray-900">FinanceFlow</span>
             </div>
             <div className="flex items-center space-x-4">
               <Button 
                 variant="ghost" 
-                className="text-white hover:bg-white/10"
-                onClick={() => setAuthModal('signin')}
+                onClick={() => handleAuthClick('signin')}
+                className="text-gray-700 hover:text-gray-900"
               >
                 Sign In
               </Button>
               <Button 
+                onClick={() => handleAuthClick('signup')}
                 className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white"
-                onClick={() => setAuthModal('signup')}
               >
                 Get Started
               </Button>
@@ -109,88 +165,67 @@ const Index = () => {
       </nav>
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-16">
-          <div className="text-center">
-            <Badge className="mb-8 bg-blue-500/20 text-blue-300 border-blue-400/50">
-              ✨ Smart Personal Finance Management
-            </Badge>
-            <h1 className="text-4xl md:text-6xl font-bold text-white mb-6 leading-tight">
-              Take Control of Your
-              <span className="bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent"> Financial Future</span>
-            </h1>
-            <p className="text-xl text-gray-300 mb-10 max-w-3xl mx-auto">
-              Track expenses, manage budgets, and grow your wealth with our intelligent personal finance platform. 
-              Natural language input, offline sync, and beautiful insights.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <Button 
-                size="lg" 
-                className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-8 py-4 text-lg"
-                onClick={() => setAuthModal('signup')}
-              >
-                Start Free Today <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-              <Button 
-                size="lg" 
-                variant="outline" 
-                className="border-white/30 text-white hover:bg-white/10 px-8 py-4 text-lg"
-                onClick={() => setAuthModal('signin')}
-              >
-                Watch Demo
-              </Button>
-            </div>
-            <p className="text-sm text-gray-400 mt-4">
-              Free forever • No credit card required • 2-minute setup
-            </p>
-          </div>
-        </div>
-
-        {/* Floating Elements */}
-        <div className="absolute top-1/4 left-10 animate-float">
-          <div className="bg-green-500/20 p-4 rounded-full backdrop-blur-sm">
-            <DollarSign className="h-6 w-6 text-green-400" />
-          </div>
-        </div>
-        <div className="absolute top-1/3 right-10 animate-float" style={{ animationDelay: '1s' }}>
-          <div className="bg-blue-500/20 p-4 rounded-full backdrop-blur-sm">
-            <TrendingUp className="h-6 w-6 text-blue-400" />
-          </div>
-        </div>
-        <div className="absolute bottom-1/4 left-1/4 animate-float" style={{ animationDelay: '2s' }}>
-          <div className="bg-purple-500/20 p-4 rounded-full backdrop-blur-sm">
-            <Target className="h-6 w-6 text-purple-400" />
+      <section className="relative py-20 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto text-center">
+          <Badge className="mb-8 bg-blue-100 text-blue-800 px-4 py-2">
+            🚀 New: AI-Powered Expense Categorization
+          </Badge>
+          <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6">
+            Take Control of Your
+            <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent"> Financial Future</span>
+          </h1>
+          <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
+            FinanceFlow is the modern way to track expenses, manage budgets, and grow your wealth. 
+            Join thousands of users who have transformed their financial lives.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Button 
+              size="lg" 
+              onClick={() => handleAuthClick('signup')}
+              className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-8 py-3"
+            >
+              Start Free Trial
+              <ArrowRight className="ml-2 h-5 w-5" />
+            </Button>
+            <Button 
+              size="lg" 
+              variant="outline"
+              onClick={() => handleAuthClick('signin')}
+              className="px-8 py-3"
+            >
+              Sign In
+            </Button>
           </div>
         </div>
       </section>
 
       {/* Features Section */}
-      <section className="py-20 bg-black/20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-white/50">
+        <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-              Everything You Need to Manage Money
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              Everything you need to manage your finances
             </h2>
-            <p className="text-xl text-gray-300 max-w-2xl mx-auto">
-              Powerful features designed to make personal finance simple, intuitive, and effective
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+              From expense tracking to goal setting, FinanceFlow provides all the tools you need.
             </p>
           </div>
           
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {features.map((feature, index) => (
-              <Card 
-                key={index} 
-                className={cn(
-                  "bg-white/10 backdrop-blur-lg border-white/20 hover:bg-white/15 transition-all duration-300 group",
-                  "hover:scale-105 hover:shadow-2xl hover:shadow-blue-500/25"
-                )}
-              >
-                <CardContent className="p-8">
-                  <div className="text-blue-400 mb-4 group-hover:scale-110 transition-transform duration-300">
+              <Card key={index} className="bg-white/70 backdrop-blur-sm border-0 shadow-lg hover:shadow-xl transition-all duration-300">
+                <CardHeader>
+                  <div className="mb-4 p-3 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg w-fit text-white">
                     {feature.icon}
                   </div>
-                  <h3 className="text-xl font-semibold text-white mb-3">{feature.title}</h3>
-                  <p className="text-gray-300">{feature.description}</p>
+                  <CardTitle className="text-xl font-semibold text-gray-900">
+                    {feature.title}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CardDescription className="text-gray-600">
+                    {feature.description}
+                  </CardDescription>
                 </CardContent>
               </Card>
             ))}
@@ -198,77 +233,92 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Natural Language Demo */}
-      <section className="py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      {/* Testimonials Section */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-              Type Like You Think
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              Loved by thousands of users
             </h2>
-            <p className="text-xl text-gray-300">
-              Our natural language processing understands your financial language
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+              See what our customers have to say about their FinanceFlow experience.
             </p>
           </div>
           
-          <div className="max-w-3xl mx-auto">
-            <Card className="bg-gray-900/50 backdrop-blur-lg border-gray-700/50">
-              <CardContent className="p-8">
-                <div className="space-y-6">
-                  <div className="bg-gray-800/50 rounded-lg p-4 font-mono text-green-400">
-                    <span className="text-gray-500">$</span> 200 #Bank @Grocery eggs bread today
-                  </div>
-                  <div className="text-gray-300 text-sm">Automatically parsed as:</div>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div className="bg-blue-500/20 p-3 rounded">
-                      <div className="text-blue-300 font-semibold">Amount</div>
-                      <div className="text-white">$200</div>
-                    </div>
-                    <div className="bg-green-500/20 p-3 rounded">
-                      <div className="text-green-300 font-semibold">Account</div>
-                      <div className="text-white">Bank</div>
-                    </div>
-                    <div className="bg-purple-500/20 p-3 rounded">
-                      <div className="text-purple-300 font-semibold">Category</div>
-                      <div className="text-white">Grocery</div>
-                    </div>
-                    <div className="bg-orange-500/20 p-3 rounded">
-                      <div className="text-orange-300 font-semibold">Date</div>
-                      <div className="text-white">Today</div>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </section>
-
-      {/* Testimonials */}
-      <section className="py-20 bg-black/20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-              Loved by Thousands
-            </h2>
-            <p className="text-xl text-gray-300">
-              See what our users say about FinanceFlow
-            </p>
-          </div>
-          
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {testimonials.map((testimonial, index) => (
-              <Card key={index} className="bg-white/10 backdrop-blur-lg border-white/20">
+              <Card key={index} className="bg-white/70 backdrop-blur-sm border-0 shadow-lg">
                 <CardContent className="p-6">
                   <div className="flex mb-4">
                     {[...Array(testimonial.rating)].map((_, i) => (
                       <Star key={i} className="h-5 w-5 text-yellow-400 fill-current" />
                     ))}
                   </div>
-                  <p className="text-gray-300 mb-4">"{testimonial.content}"</p>
+                  <p className="text-gray-700 mb-4 italic">"{testimonial.content}"</p>
                   <div>
-                    <div className="font-semibold text-white">{testimonial.name}</div>
-                    <div className="text-sm text-gray-400">{testimonial.role}</div>
+                    <p className="font-semibold text-gray-900">{testimonial.name}</p>
+                    <p className="text-sm text-gray-600">{testimonial.role}</p>
                   </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Pricing Section */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-white/50">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              Simple, transparent pricing
+            </h2>
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+              Choose the plan that's right for you. Start free, upgrade when you need more.
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {pricingPlans.map((plan, index) => (
+              <Card 
+                key={index} 
+                className={`relative bg-white/70 backdrop-blur-sm border-0 shadow-lg hover:shadow-xl transition-all duration-300 ${
+                  plan.popular ? 'ring-2 ring-blue-500' : ''
+                }`}
+              >
+                {plan.popular && (
+                  <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                    <Badge className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 py-1">
+                      Most Popular
+                    </Badge>
+                  </div>
+                )}
+                <CardHeader className="text-center">
+                  <CardTitle className="text-2xl font-bold text-gray-900">{plan.name}</CardTitle>
+                  <div className="mt-4">
+                    <span className="text-4xl font-bold text-gray-900">{plan.price}</span>
+                    <span className="text-gray-600">/{plan.period}</span>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <ul className="space-y-3 mb-6">
+                    {plan.features.map((feature, featureIndex) => (
+                      <li key={featureIndex} className="flex items-center">
+                        <Check className="h-5 w-5 text-green-500 mr-3" />
+                        <span className="text-gray-700">{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <Button 
+                    className={`w-full ${
+                      plan.popular 
+                        ? 'bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white' 
+                        : 'bg-gray-900 hover:bg-gray-800 text-white'
+                    }`}
+                    onClick={() => handleAuthClick('signup')}
+                  >
+                    Get Started
+                  </Button>
                 </CardContent>
               </Card>
             ))}
@@ -277,69 +327,50 @@ const Index = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20">
-        <div className="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-            Ready to Transform Your Finances?
+      <section className="py-20 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-4xl mx-auto text-center">
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
+            Ready to transform your finances?
           </h2>
-          <p className="text-xl text-gray-300 mb-8">
-            Join thousands of users who have taken control of their financial future
+          <p className="text-xl text-gray-600 mb-8">
+            Join thousands of users who have already taken control of their financial future with FinanceFlow.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button 
-              size="lg" 
-              className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-8 py-4 text-lg"
-              onClick={() => setAuthModal('signup')}
-            >
-              Start Your Journey <ArrowRight className="ml-2 h-5 w-5" />
-            </Button>
-          </div>
-          <div className="flex items-center justify-center space-x-6 mt-8 text-sm text-gray-400">
-            <div className="flex items-center">
-              <CheckCircle className="h-4 w-4 text-green-400 mr-2" />
-              Free forever
-            </div>
-            <div className="flex items-center">
-              <CheckCircle className="h-4 w-4 text-green-400 mr-2" />
-              No credit card
-            </div>
-            <div className="flex items-center">
-              <CheckCircle className="h-4 w-4 text-green-400 mr-2" />
-              2-min setup
-            </div>
-          </div>
+          <Button 
+            size="lg"
+            onClick={() => handleAuthClick('signup')}
+            className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-8 py-3"
+          >
+            Start Your Free Trial
+            <ArrowRight className="ml-2 h-5 w-5" />
+          </Button>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="bg-black/30 border-t border-white/10 py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row justify-between items-center">
-            <div className="flex items-center space-x-2 mb-4 md:mb-0">
-              <div className="h-8 w-8 bg-gradient-to-r from-blue-400 to-purple-500 rounded-lg flex items-center justify-center">
-                <TrendingUp className="h-5 w-5 text-white" />
-              </div>
-              <span className="text-xl font-bold text-white">FinanceFlow</span>
+      <footer className="bg-gray-900 text-white py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto text-center">
+          <div className="flex items-center justify-center space-x-2 mb-6">
+            <div className="h-8 w-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+              <TrendingUp className="h-5 w-5 text-white" />
             </div>
-            <div className="text-gray-400">
-              Created with ❤️ by{" "}
-              <a 
-                href="http://Jawaid.dev" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="text-blue-400 hover:text-blue-300 transition-colors"
-              >
-                Jawaid.dev
-              </a>
-            </div>
+            <span className="text-xl font-bold">FinanceFlow</span>
+          </div>
+          <p className="text-gray-400 mb-6">
+            The modern way to manage your finances. Built with ❤️ for financial freedom.
+          </p>
+          <div className="flex justify-center space-x-6 text-sm text-gray-400">
+            <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
+            <a href="#" className="hover:text-white transition-colors">Terms of Service</a>
+            <a href="#" className="hover:text-white transition-colors">Contact</a>
           </div>
         </div>
       </footer>
 
+      {/* Auth Modal */}
       <AuthModal 
-        isOpen={!!authModal} 
-        onClose={() => setAuthModal(null)}
-        mode={authModal || 'signin'}
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        mode={authMode}
       />
     </div>
   );

@@ -8,6 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 import { 
   DollarSign, 
   Calendar, 
@@ -34,10 +36,12 @@ export const TransactionInput = ({ isOpen, onClose }: TransactionInputProps) => 
     description: ""
   });
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Mock data for dropdowns
+  // Mock data for dropdowns - in real app, these would come from user's accounts
   const accounts = ["Cash", "Bank Account", "Credit Card", "Savings"];
   const categories = ["Grocery", "Food & Dining", "Transportation", "Shopping", "Entertainment", "Bills", "Healthcare"];
 
@@ -110,7 +114,16 @@ export const TransactionInput = ({ isOpen, onClose }: TransactionInputProps) => 
     }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to add transactions.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     if (!parsedTransaction.amount) {
       toast({
         title: "Missing Amount",
@@ -120,22 +133,64 @@ export const TransactionInput = ({ isOpen, onClose }: TransactionInputProps) => 
       return;
     }
 
-    toast({
-      title: "Transaction Added!",
-      description: `${parsedTransaction.type === 'expense' ? 'Expense' : 'Income'} of $${parsedTransaction.amount} recorded successfully.`,
-    });
-    
-    // Reset form
-    setNaturalInput("");
-    setParsedTransaction({
-      amount: "",
-      account: "",
-      category: "",
-      type: "expense",
-      date: "",
-      description: ""
-    });
-    onClose();
+    if (!parsedTransaction.category) {
+      toast({
+        title: "Missing Category",
+        description: "Please select a category for the transaction.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const { error } = await supabase
+        .from('transactions')
+        .insert({
+          user_id: user.id,
+          amount: parseFloat(parsedTransaction.amount),
+          description: parsedTransaction.description || `${parsedTransaction.type} transaction`,
+          category: parsedTransaction.category,
+          type: parsedTransaction.type,
+          date: parsedTransaction.date || new Date().toISOString().split('T')[0]
+        });
+
+      if (error) {
+        console.error('Error creating transaction:', error);
+        toast({
+          title: "Error",
+          description: "Failed to create transaction. Please try again.",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Transaction Added!",
+          description: `${parsedTransaction.type === 'expense' ? 'Expense' : 'Income'} of $${parsedTransaction.amount} recorded successfully.`,
+        });
+        
+        // Reset form
+        setNaturalInput("");
+        setParsedTransaction({
+          amount: "",
+          account: "",
+          category: "",
+          type: "expense",
+          date: "",
+          description: ""
+        });
+        onClose();
+      }
+    } catch (error) {
+      console.error('Unexpected error:', error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const exampleInputs = [
@@ -263,26 +318,6 @@ export const TransactionInput = ({ isOpen, onClose }: TransactionInputProps) => 
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="account">Account</Label>
-                  <div className="relative">
-                    <Wallet className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                    <Select 
-                      value={parsedTransaction.account} 
-                      onValueChange={(value) => setParsedTransaction({...parsedTransaction, account: value})}
-                    >
-                      <SelectTrigger className="pl-10">
-                        <SelectValue placeholder="Select account" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {accounts.map((account) => (
-                          <SelectItem key={account} value={account}>{account}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
                   <Label htmlFor="category">Category</Label>
                   <div className="relative">
                     <Tag className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
@@ -334,10 +369,11 @@ export const TransactionInput = ({ isOpen, onClose }: TransactionInputProps) => 
           <div className="flex space-x-3">
             <Button 
               onClick={handleSubmit}
+              disabled={isLoading}
               className="flex-1 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white"
             >
               <Plus className="h-4 w-4 mr-2" />
-              Add Transaction
+              {isLoading ? "Adding..." : "Add Transaction"}
             </Button>
             <Button variant="outline" onClick={onClose}>
               Cancel

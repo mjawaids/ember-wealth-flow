@@ -1,8 +1,10 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/hooks/useAuth";
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -22,7 +24,8 @@ import {
   CreditCard,
   Target,
   ArrowUpRight,
-  ArrowDownRight
+  ArrowDownRight,
+  LogOut
 } from "lucide-react";
 import { TransactionInput } from "@/components/TransactionInput";
 import { RecentTransactions } from "@/components/RecentTransactions";
@@ -33,6 +36,36 @@ import { cn } from "@/lib/utils";
 const Dashboard = () => {
   const [showTransactionInput, setShowTransactionInput] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
+  const { user, signOut, loading } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate('/auth');
+    }
+  }, [user, loading, navigate]);
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/');
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="h-8 w-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center mx-auto mb-4">
+            <TrendingUp className="h-5 w-5 text-white animate-pulse" />
+          </div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
 
   // Mock data - in real app this would come from API
   const financialData = {
@@ -108,8 +141,8 @@ const Dashboard = () => {
               <Button variant="ghost" size="sm">
                 <Settings className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="sm">
-                <User className="h-4 w-4" />
+              <Button variant="ghost" size="sm" onClick={handleSignOut}>
+                <LogOut className="h-4 w-4" />
               </Button>
             </div>
           </div>
@@ -120,7 +153,9 @@ const Dashboard = () => {
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Good morning, User!</h1>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              Good morning, {user.user_metadata?.full_name || user.email}!
+            </h1>
             <p className="text-gray-600">Here's your financial overview for today</p>
           </div>
           <Button 

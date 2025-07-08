@@ -1,11 +1,13 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import { Mail, Lock, User, Eye, EyeOff } from "lucide-react";
 
 interface AuthModalProps {
@@ -25,25 +27,74 @@ export const AuthModal = ({ isOpen, onClose, mode }: AuthModalProps) => {
   });
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const { signIn, signUp, user } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    setCurrentMode(mode);
+  }, [mode]);
+
+  useEffect(() => {
+    if (user) {
+      onClose();
+      navigate('/dashboard');
+    }
+  }, [user, onClose, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
-    // Simulate authentication
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      if (currentMode === 'signup') {
+        if (formData.password !== formData.confirmPassword) {
+          toast({
+            title: "Passwords don't match",
+            description: "Please make sure your passwords match.",
+            variant: "destructive"
+          });
+          return;
+        }
+
+        const { error } = await signUp(formData.email, formData.password, formData.name);
+        
+        if (error) {
+          toast({
+            title: "Sign up failed",
+            description: error.message,
+            variant: "destructive"
+          });
+        } else {
+          toast({
+            title: "Account created!",
+            description: "Please check your email to verify your account.",
+          });
+        }
+      } else {
+        const { error } = await signIn(formData.email, formData.password);
+        
+        if (error) {
+          toast({
+            title: "Sign in failed",
+            description: error.message,
+            variant: "destructive"
+          });
+        } else {
+          toast({
+            title: "Welcome back!",
+            description: "You have successfully signed in.",
+          });
+        }
+      }
+    } catch (error) {
       toast({
-        title: currentMode === 'signin' ? "Welcome back!" : "Account created!",
-        description: currentMode === 'signin' 
-          ? "You have successfully signed in." 
-          : "Your account has been created successfully.",
+        title: "An error occurred",
+        description: "Please try again later.",
+        variant: "destructive"
       });
-      onClose();
-      
-      // In a real app, this would redirect to the dashboard
-      window.location.href = '/dashboard';
-    }, 2000);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleGoogleAuth = () => {
