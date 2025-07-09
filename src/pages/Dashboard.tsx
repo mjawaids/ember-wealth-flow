@@ -57,7 +57,7 @@ const Dashboard = () => {
     if (user) {
       fetchData();
     }
-  }, [user]);
+  }, [user, activeTab]);
 
   const fetchData = async () => {
     try {
@@ -71,12 +71,13 @@ const Dashboard = () => {
 
       if (accountsError) throw accountsError;
 
-      // Fetch transactions
+      // Fetch transactions (fetch all for tabs, limit to 10 for overview)
+      const transactionLimit = activeTab === 'transactions' ? 100 : 10;
       const { data: transactionsData, error: transactionsError } = await supabase
         .from('transactions')
         .select('*')
         .order('created_at', { ascending: false })
-        .limit(10);
+        .limit(transactionLimit);
 
       if (transactionsError) throw transactionsError;
 
@@ -303,18 +304,80 @@ const Dashboard = () => {
             </div>
 
             {/* Main Content */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              {/* Charts and Analytics */}
-              <div className="lg:col-span-2 space-y-6">
-                <FinancialChart transactions={transactions} />
-                {activeTab === 'accounts' && <AccountCards accounts={accounts} onRefresh={fetchData} />}
+            {activeTab === 'overview' && (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Charts and Analytics */}
+                <div className="lg:col-span-2 space-y-6">
+                  <FinancialChart transactions={transactions} />
+                </div>
+                {/* Recent Transactions */}
+                <div className="lg:col-span-1">
+                  <RecentTransactions transactions={transactions} />
+                </div>
               </div>
+            )}
 
-              {/* Recent Transactions */}
-              <div className="lg:col-span-1">
+            {activeTab === 'transactions' && (
+              <div className="space-y-6">
                 <RecentTransactions transactions={transactions} />
               </div>
-            </div>
+            )}
+
+            {activeTab === 'accounts' && (
+              <div className="space-y-6">
+                <AccountCards accounts={accounts} onRefresh={fetchData} />
+              </div>
+            )}
+
+            {activeTab === 'analytics' && (
+              <div className="space-y-6">
+                <FinancialChart transactions={transactions} />
+              </div>
+            )}
+
+            {activeTab === 'goals' && (
+              <div className="space-y-6">
+                <Card className="bg-white/70 backdrop-blur-sm border-0 shadow-lg">
+                  <CardHeader>
+                    <CardTitle className="flex items-center space-x-2">
+                      <Target className="h-5 w-5" />
+                      <span>Financial Goals</span>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {goals.length === 0 ? (
+                      <div className="text-center py-8">
+                        <Target className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                        <p className="text-gray-600 mb-4">No financial goals set yet</p>
+                        <Button variant="outline">Add Your First Goal</Button>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {goals.map((goal: any) => (
+                          <div key={goal.id} className="p-4 border rounded-lg">
+                            <div className="flex justify-between items-center mb-2">
+                              <h3 className="font-semibold">{goal.name}</h3>
+                              <span className="text-sm text-gray-600">
+                                ${goal.current_amount.toLocaleString()} / ${goal.target_amount.toLocaleString()}
+                              </span>
+                            </div>
+                            <div className="w-full bg-gray-200 rounded-full h-2">
+                              <div 
+                                className="bg-blue-500 h-2 rounded-full" 
+                                style={{ width: `${Math.min((goal.current_amount / goal.target_amount) * 100, 100)}%` }}
+                              ></div>
+                            </div>
+                            <p className="text-sm text-gray-600 mt-2">
+                              {Math.round((goal.current_amount / goal.target_amount) * 100)}% complete
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            )}
           </>
         )}
       </div>
