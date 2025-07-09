@@ -30,9 +30,10 @@ interface Account {
 interface AccountCardsProps {
   accounts: Account[];
   onRefresh: () => void;
+  onAddAccount?: () => void;
 }
 
-export const AccountCards = ({ accounts, onRefresh }: AccountCardsProps) => {
+export const AccountCards = ({ accounts, onRefresh, onAddAccount }: AccountCardsProps) => {
   const [showBalances, setShowBalances] = useState(true);
 
   const getAccountIcon = (type: string) => {
@@ -74,7 +75,11 @@ export const AccountCards = ({ accounts, onRefresh }: AccountCardsProps) => {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <h3 className="text-lg font-semibold text-gray-900">Your Accounts</h3>
-          <Button size="sm" className="bg-gradient-to-r from-blue-500 to-purple-600 text-white">
+          <Button 
+            size="sm" 
+            className="bg-gradient-to-r from-blue-500 to-purple-600 text-white"
+            onClick={onAddAccount}
+          >
             <Plus className="h-4 w-4 mr-2" />
             Add Account
           </Button>
@@ -90,7 +95,11 @@ export const AccountCards = ({ accounts, onRefresh }: AccountCardsProps) => {
               <p className="text-gray-400 text-xs mb-4">
                 Add your bank accounts, credit cards, and cash accounts to track your finances
               </p>
-              <Button size="sm" className="bg-gradient-to-r from-blue-500 to-purple-600 text-white">
+              <Button 
+                size="sm" 
+                className="bg-gradient-to-r from-blue-500 to-purple-600 text-white"
+                onClick={onAddAccount}
+              >
                 <Plus className="h-4 w-4 mr-2" />
                 Add Your First Account
               </Button>
@@ -123,7 +132,11 @@ export const AccountCards = ({ accounts, onRefresh }: AccountCardsProps) => {
           >
             {showBalances ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
           </Button>
-          <Button size="sm" className="bg-gradient-to-r from-blue-500 to-purple-600 text-white">
+          <Button 
+            size="sm" 
+            className="bg-gradient-to-r from-blue-500 to-purple-600 text-white"
+            onClick={onAddAccount}
+          >
             <Plus className="h-4 w-4 mr-2" />
             Add Account
           </Button>

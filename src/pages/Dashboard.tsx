@@ -30,6 +30,8 @@ import {
   LogOut
 } from "lucide-react";
 import { TransactionInput } from "@/components/TransactionInput";
+import { AccountInput } from "@/components/AccountInput";
+import { NaturalLanguageInput } from "@/components/NaturalLanguageInput";
 import { RecentTransactions } from "@/components/RecentTransactions";
 import { FinancialChart } from "@/components/FinancialChart";
 import { AccountCards } from "@/components/AccountCards";
@@ -38,6 +40,7 @@ import { cn } from "@/lib/utils";
 
 const Dashboard = () => {
   const [showTransactionInput, setShowTransactionInput] = useState(false);
+  const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
   const [accounts, setAccounts] = useState([]);
   const [transactions, setTransactions] = useState([]);
@@ -305,14 +308,17 @@ const Dashboard = () => {
 
             {/* Main Content */}
             {activeTab === 'overview' && (
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Charts and Analytics */}
-                <div className="lg:col-span-2 space-y-6">
-                  <FinancialChart transactions={transactions} />
-                </div>
-                {/* Recent Transactions */}
-                <div className="lg:col-span-1">
-                  <RecentTransactions transactions={transactions} />
+              <div className="space-y-6">
+                <NaturalLanguageInput onSuccess={fetchData} />
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                  {/* Charts and Analytics */}
+                  <div className="lg:col-span-2 space-y-6">
+                    <FinancialChart transactions={transactions} />
+                  </div>
+                  {/* Recent Transactions */}
+                  <div className="lg:col-span-1">
+                    <RecentTransactions transactions={transactions} />
+                  </div>
                 </div>
               </div>
             )}
@@ -325,7 +331,11 @@ const Dashboard = () => {
 
             {activeTab === 'accounts' && (
               <div className="space-y-6">
-                <AccountCards accounts={accounts} onRefresh={fetchData} />
+                <AccountCards 
+                  accounts={accounts} 
+                  onRefresh={fetchData}
+                  onAddAccount={() => setIsAccountModalOpen(true)}
+                />
               </div>
             )}
 
@@ -386,6 +396,13 @@ const Dashboard = () => {
       <TransactionInput 
         isOpen={showTransactionInput}
         onClose={() => setShowTransactionInput(false)}
+        onSuccess={fetchData}
+      />
+
+      {/* Account Input Modal */}
+      <AccountInput
+        isOpen={isAccountModalOpen}
+        onClose={() => setIsAccountModalOpen(false)}
         onSuccess={fetchData}
       />
     </div>

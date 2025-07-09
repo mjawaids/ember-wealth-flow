@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,6 +15,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 
+interface Account {
+  id: string;
+  name: string;
+  type: string;
+}
+
 interface TransactionInputProps {
   isOpen: boolean;
   onClose: () => void;
@@ -27,11 +33,34 @@ export function TransactionInput({ isOpen, onClose, onSuccess }: TransactionInpu
     amount: "",
     category: "",
     type: "expense",
+    account_id: "",
     date: new Date(),
   });
   const [loading, setLoading] = useState(false);
+  const [accounts, setAccounts] = useState<Account[]>([]);
   const { toast } = useToast();
   const { user } = useAuth();
+
+  useEffect(() => {
+    if (isOpen && user) {
+      fetchAccounts();
+    }
+  }, [isOpen, user]);
+
+  const fetchAccounts = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('accounts')
+        .select('id, name, type')
+        .eq('user_id', user?.id)
+        .eq('is_active', true);
+
+      if (error) throw error;
+      setAccounts(data || []);
+    } catch (error) {
+      console.error('Error fetching accounts:', error);
+    }
+  };
 
   const categories = [
     "Food & Dining",
@@ -77,6 +106,7 @@ export function TransactionInput({ isOpen, onClose, onSuccess }: TransactionInpu
             amount: amount,
             category: formData.category,
             type: formData.type,
+            account_id: formData.account_id || null,
             date: format(formData.date, 'yyyy-MM-dd'),
             user_id: user?.id,
           }
@@ -95,6 +125,7 @@ export function TransactionInput({ isOpen, onClose, onSuccess }: TransactionInpu
         amount: "",
         category: "",
         type: "expense",
+        account_id: "",
         date: new Date(),
       });
 
@@ -173,6 +204,25 @@ export function TransactionInput({ isOpen, onClose, onSuccess }: TransactionInpu
                 {categories.map((category) => (
                   <SelectItem key={category} value={category}>
                     {category}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="account">Account (Optional)</Label>
+            <Select
+              value={formData.account_id}
+              onValueChange={(value) => setFormData({ ...formData, account_id: value })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select account" />
+              </SelectTrigger>
+              <SelectContent>
+                {accounts.map((account) => (
+                  <SelectItem key={account.id} value={account.id}>
+                    {account.name} ({account.type})
                   </SelectItem>
                 ))}
               </SelectContent>
