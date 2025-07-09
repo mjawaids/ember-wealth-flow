@@ -13,6 +13,7 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 
 interface TransactionInputProps {
   isOpen: boolean;
@@ -30,6 +31,7 @@ export function TransactionInput({ isOpen, onClose, onSuccess }: TransactionInpu
   });
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const categories = [
     "Food & Dining",
@@ -76,6 +78,7 @@ export function TransactionInput({ isOpen, onClose, onSuccess }: TransactionInpu
             category: formData.category,
             type: formData.type,
             date: format(formData.date, 'yyyy-MM-dd'),
+            user_id: user?.id,
           }
         ]);
 
