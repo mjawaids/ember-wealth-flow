@@ -3,30 +3,119 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
-import { useState } from "react";
-import { TrendingUp, Calendar, BarChart3 } from "lucide-react";
+import { useState, useMemo } from "react";
+import { TrendingUp, Calendar, BarChart3, PieChart as PieChartIcon } from "lucide-react";
 
-export const FinancialChart = () => {
+interface Transaction {
+  id: string;
+  description: string;
+  amount: number;
+  category: string;
+  date: string;
+  type: string;
+}
+
+interface FinancialChartProps {
+  transactions: Transaction[];
+}
+
+export const FinancialChart = ({ transactions }: FinancialChartProps) => {
   const [chartType, setChartType] = useState<'line' | 'area' | 'pie'>('area');
   const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d' | '1y'>('30d');
 
-  const monthlyData = [
-    { month: 'Jan', income: 4200, expenses: 2800, savings: 1400 },
-    { month: 'Feb', income: 4500, expenses: 2950, savings: 1550 },
-    { month: 'Mar', income: 4300, expenses: 3100, savings: 1200 },
-    { month: 'Apr', income: 4800, expenses: 2750, savings: 2050 },
-    { month: 'May', income: 4600, expenses: 2900, savings: 1700 },
-    { month: 'Jun', income: 4500, expenses: 2850, savings: 1650 }
-  ];
+  const processedData = useMemo(() => {
+    if (transactions.length === 0) {
+      return {
+        monthlyData: [],
+        categoryData: [],
+        isEmpty: true
+      };
+    }
 
-  const categoryData = [
-    { name: 'Food & Dining', value: 850, color: '#8884d8' },
-    { name: 'Transportation', value: 450, color: '#82ca9d' },
-    { name: 'Shopping', value: 380, color: '#ffc658' },
-    { name: 'Entertainment', value: 220, color: '#ff7c7c' },
-    { name: 'Bills', value: 650, color: '#8dd1e1' },
-    { name: 'Healthcare', value: 180, color: '#d084d0' }
-  ];
+    // Get date range based on selection
+    const now = new Date();
+    const rangeStart = new Date();
+    switch (timeRange) {
+      case '7d':
+        rangeStart.setDate(now.getDate() - 7);
+        break;
+      case '30d':
+        rangeStart.setDate(now.getDate() - 30);
+        break;
+      case '90d':
+        rangeStart.setDate(now.getDate() - 90);
+        break;
+      case '1y':
+        rangeStart.setFullYear(now.getFullYear() - 1);
+        break;
+    }
+
+    // Filter transactions by date range
+    const filteredTransactions = transactions.filter(t => 
+      new Date(t.date) >= rangeStart && new Date(t.date) <= now
+    );
+
+    // Process monthly data
+    const monthlyMap = new Map();
+    filteredTransactions.forEach(transaction => {
+      const date = new Date(transaction.date);
+      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      const monthName = date.toLocaleDateString('en-US', { month: 'short' });
+      
+      if (!monthlyMap.has(monthKey)) {
+        monthlyMap.set(monthKey, { 
+          month: monthName, 
+          income: 0, 
+          expenses: 0, 
+          savings: 0 
+        });
+      }
+      
+      const monthData = monthlyMap.get(monthKey);
+      const amount = Math.abs(Number(transaction.amount));
+      
+      if (transaction.type === 'income') {
+        monthData.income += amount;
+      } else if (transaction.type === 'expense') {
+        monthData.expenses += amount;
+      }
+    });
+
+    // Calculate savings for each month
+    const monthlyData = Array.from(monthlyMap.values()).map(month => ({
+      ...month,
+      savings: month.income - month.expenses
+    }));
+
+    // Process category data
+    const categoryMap = new Map();
+    const colors = ['#8884d8', '#82ca9d', '#ffc658', '#ff7c7c', '#8dd1e1', '#d084d0', '#ffb347', '#87ceeb'];
+    
+    filteredTransactions
+      .filter(t => t.type === 'expense')
+      .forEach(transaction => {
+        const category = transaction.category;
+        const amount = Math.abs(Number(transaction.amount));
+        
+        if (!categoryMap.has(category)) {
+          categoryMap.set(category, {
+            name: category,
+            value: 0,
+            color: colors[categoryMap.size % colors.length]
+          });
+        }
+        
+        categoryMap.get(category).value += amount;
+      });
+
+    const categoryData = Array.from(categoryMap.values());
+
+    return {
+      monthlyData,
+      categoryData,
+      isEmpty: false
+    };
+  }, [transactions, timeRange]);
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
@@ -44,6 +133,27 @@ export const FinancialChart = () => {
     return null;
   };
 
+  if (processedData.isEmpty) {
+    return (
+      <Card className="bg-white/70 backdrop-blur-sm border-0 shadow-lg">
+        <CardHeader>
+          <CardTitle className="text-lg font-semibold">Financial Overview</CardTitle>
+        </CardHeader>
+        <CardContent className="py-8">
+          <div className="text-center">
+            <div className="h-16 w-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <BarChart3 className="h-8 w-8 text-gray-400" />
+            </div>
+            <p className="text-gray-500 text-sm mb-2">No data to display</p>
+            <p className="text-gray-400 text-xs">
+              Add some transactions to see your financial charts
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card className="bg-white/70 backdrop-blur-sm border-0 shadow-lg">
       <CardHeader>
@@ -52,7 +162,7 @@ export const FinancialChart = () => {
             <CardTitle className="text-lg font-semibold">Financial Overview</CardTitle>
             <Badge className="bg-green-100 text-green-800">
               <TrendingUp className="h-3 w-3 mr-1" />
-              +12.5%
+              Live Data
             </Badge>
           </div>
           
@@ -85,12 +195,12 @@ export const FinancialChart = () => {
             </div>
             
             <div className="flex bg-gray-100 rounded-lg p-1">
-              {['7d', '30d', '90d', '1y'].map((range) => (
+              {(['7d', '30d', '90d', '1y'] as const).map((range) => (
                 <Button
                   key={range}
                   size="sm"
                   variant={timeRange === range ? 'default' : 'ghost'}
-                  onClick={() => setTimeRange(range as any)}
+                  onClick={() => setTimeRange(range)}
                   className="px-3 py-1 text-xs"
                 >
                   {range}
@@ -103,9 +213,9 @@ export const FinancialChart = () => {
       
       <CardContent>
         <div className="h-80">
-          {chartType === 'area' && (
+          {chartType === 'area' && processedData.monthlyData.length > 0 && (
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={monthlyData}>
+              <AreaChart data={processedData.monthlyData}>
                 <defs>
                   <linearGradient id="incomeGradient" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8}/>
@@ -140,9 +250,9 @@ export const FinancialChart = () => {
             </ResponsiveContainer>
           )}
           
-          {chartType === 'line' && (
+          {chartType === 'line' && processedData.monthlyData.length > 0 && (
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={monthlyData}>
+              <LineChart data={processedData.monthlyData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                 <XAxis dataKey="month" stroke="#64748b" fontSize={12} />
                 <YAxis stroke="#64748b" fontSize={12} />
@@ -172,12 +282,12 @@ export const FinancialChart = () => {
             </ResponsiveContainer>
           )}
           
-          {chartType === 'pie' && (
+          {chartType === 'pie' && processedData.categoryData.length > 0 && (
             <div className="flex flex-col lg:flex-row items-center justify-center space-y-4 lg:space-y-0 lg:space-x-8">
               <ResponsiveContainer width="100%" height={300}>
                 <PieChart>
                   <Pie
-                    data={categoryData}
+                    data={processedData.categoryData}
                     cx="50%"
                     cy="50%"
                     innerRadius={60}
@@ -185,7 +295,7 @@ export const FinancialChart = () => {
                     paddingAngle={5}
                     dataKey="value"
                   >
-                    {categoryData.map((entry, index) => (
+                    {processedData.categoryData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
@@ -195,7 +305,7 @@ export const FinancialChart = () => {
                 </PieChart>
               </ResponsiveContainer>
               <div className="space-y-2">
-                {categoryData.map((category, index) => (
+                {processedData.categoryData.map((category, index) => (
                   <div key={index} className="flex items-center space-x-3">
                     <div 
                       className="w-3 h-3 rounded-full" 
@@ -210,9 +320,27 @@ export const FinancialChart = () => {
               </div>
             </div>
           )}
+          
+          {((chartType === 'area' || chartType === 'line') && processedData.monthlyData.length === 0) && (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center">
+                <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-500 text-sm">No data for selected time range</p>
+              </div>
+            </div>
+          )}
+          
+          {chartType === 'pie' && processedData.categoryData.length === 0 && (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center">
+                <PieChartIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-500 text-sm">No expense categories to display</p>
+              </div>
+            </div>
+          )}
         </div>
         
-        {chartType !== 'pie' && (
+        {chartType !== 'pie' && processedData.monthlyData.length > 0 && (
           <div className="flex justify-center space-x-6 mt-4 pt-4 border-t border-gray-200">
             <div className="flex items-center space-x-2">
               <div className="w-3 h-3 bg-blue-500 rounded-full" />

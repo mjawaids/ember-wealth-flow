@@ -7,68 +7,26 @@ import {
   ArrowDownLeft, 
   ArrowLeftRight,
   MoreHorizontal,
-  Filter
+  Filter,
+  Receipt
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export const RecentTransactions = () => {
-  const transactions = [
-    {
-      id: 1,
-      description: "Grocery Shopping",
-      amount: -156.78,
-      category: "Grocery",
-      account: "Bank Account",
-      date: "2024-01-15",
-      type: "expense" as const
-    },
-    {
-      id: 2,
-      description: "Salary Deposit",
-      amount: 4500.00,
-      category: "Salary",
-      account: "Bank Account",
-      date: "2024-01-15",
-      type: "income" as const
-    },
-    {
-      id: 3,
-      description: "Coffee Shop",
-      amount: -12.50,
-      category: "Food & Dining",
-      account: "Credit Card",
-      date: "2024-01-14",
-      type: "expense" as const
-    },
-    {
-      id: 4,
-      description: "Transfer to Savings",
-      amount: -500.00,
-      category: "Transfer",
-      account: "Bank Account",
-      date: "2024-01-14",
-      type: "transfer" as const
-    },
-    {
-      id: 5,
-      description: "Uber Ride",
-      amount: -25.30,
-      category: "Transportation",
-      account: "Credit Card",
-      date: "2024-01-13",
-      type: "expense" as const
-    },
-    {
-      id: 6,
-      description: "Freelance Payment",
-      amount: 850.00,
-      category: "Freelance",
-      account: "Bank Account",
-      date: "2024-01-12",
-      type: "income" as const
-    }
-  ];
+interface Transaction {
+  id: string;
+  description: string;
+  amount: number;
+  category: string;
+  account_id: string;
+  date: string;
+  type: string;
+}
 
+interface RecentTransactionsProps {
+  transactions: Transaction[];
+}
+
+export const RecentTransactions = ({ transactions }: RecentTransactionsProps) => {
   const getTransactionIcon = (type: string) => {
     switch (type) {
       case 'income':
@@ -82,9 +40,9 @@ export const RecentTransactions = () => {
     }
   };
 
-  const getAmountColor = (amount: number) => {
-    if (amount > 0) return "text-green-600";
-    if (amount < 0) return "text-red-600";
+  const getAmountColor = (amount: number, type: string) => {
+    if (type === 'income') return "text-green-600";
+    if (type === 'expense') return "text-red-600";
     return "text-gray-600";
   };
 
@@ -102,6 +60,27 @@ export const RecentTransactions = () => {
       return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     }
   };
+
+  if (transactions.length === 0) {
+    return (
+      <Card className="h-fit bg-white/70 backdrop-blur-sm border-0 shadow-lg">
+        <CardHeader>
+          <CardTitle className="text-lg font-semibold">Recent Transactions</CardTitle>
+        </CardHeader>
+        <CardContent className="py-8">
+          <div className="text-center">
+            <div className="h-16 w-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Receipt className="h-8 w-8 text-gray-400" />
+            </div>
+            <p className="text-gray-500 text-sm mb-2">No transactions yet</p>
+            <p className="text-gray-400 text-xs">
+              Add your first transaction to see it here
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="h-fit bg-white/70 backdrop-blur-sm border-0 shadow-lg">
@@ -136,15 +115,13 @@ export const RecentTransactions = () => {
                   <Badge variant="outline" className="text-xs">
                     {transaction.category}
                   </Badge>
-                  <span className="text-xs text-gray-500">
-                    {transaction.account}
-                  </span>
                 </div>
               </div>
             </div>
             <div className="text-right">
-              <p className={cn("text-sm font-semibold", getAmountColor(transaction.amount))}>
-                {transaction.amount > 0 ? '+' : ''}${Math.abs(transaction.amount).toLocaleString()}
+              <p className={cn("text-sm font-semibold", getAmountColor(transaction.amount, transaction.type))}>
+                {transaction.type === 'income' ? '+' : transaction.type === 'expense' ? '-' : ''}
+                ${Math.abs(Number(transaction.amount)).toLocaleString()}
               </p>
               <p className="text-xs text-gray-500">
                 {formatDate(transaction.date)}

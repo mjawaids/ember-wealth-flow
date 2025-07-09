@@ -5,6 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -31,26 +33,96 @@ import { TransactionInput } from "@/components/TransactionInput";
 import { RecentTransactions } from "@/components/RecentTransactions";
 import { FinancialChart } from "@/components/FinancialChart";
 import { AccountCards } from "@/components/AccountCards";
+import { EmptyState } from "@/components/EmptyState";
 import { cn } from "@/lib/utils";
 
 const Dashboard = () => {
   const [showTransactionInput, setShowTransactionInput] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
-  const { user, signOut, loading } = useAuth();
+  const [accounts, setAccounts] = useState([]);
+  const [transactions, setTransactions] = useState([]);
+  const [goals, setGoals] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const { user, signOut, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   useEffect(() => {
-    if (!loading && !user) {
+    if (!authLoading && !user) {
       navigate('/auth');
     }
-  }, [user, loading, navigate]);
+  }, [user, authLoading, navigate]);
+
+  useEffect(() => {
+    if (user) {
+      fetchData();
+    }
+  }, [user]);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      
+      // Fetch accounts
+      const { data: accountsData, error: accountsError } = await supabase
+        .from('accounts')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (accountsError) throw accountsError;
+
+      // Fetch transactions
+      const { data: transactionsData, error: transactionsError } = await supabase
+        .from('transactions')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (transactionsError) throw transactionsError;
+
+      // Fetch goals
+      const { data: goalsData, error: goalsError } = await supabase
+        .from('goals')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (goalsError) throw goalsError;
+
+      setAccounts(accountsData || []);
+      setTransactions(transactionsData || []);
+      setGoals(goalsData || []);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load data. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSignOut = async () => {
     await signOut();
     navigate('/');
   };
 
-  if (loading) {
+  const handleNotifications = () => {
+    toast({
+      title: "Notifications",
+      description: "No new notifications at this time.",
+    });
+  };
+
+  const handleSettings = () => {
+    toast({
+      title: "Settings",
+      description: "Settings panel coming soon!",
+    });
+  };
+
+  if (authLoading || loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
         <div className="text-center">
@@ -67,41 +139,43 @@ const Dashboard = () => {
     return null;
   }
 
-  // Mock data - in real app this would come from API
-  const financialData = {
-    totalBalance: 15750.25,
-    monthlyIncome: 4500.00,
-    monthlyExpenses: 2850.75,
-    savingsGoal: 10000,
-    currentSavings: 5750
-  };
+  // Calculate financial data from real data
+  const totalBalance = accounts.reduce((sum, account) => sum + Number(account.balance), 0);
+  const monthlyIncome = transactions
+    .filter(t => t.type === 'income' && new Date(t.date).getMonth() === new Date().getMonth())
+    .reduce((sum, t) => sum + Number(t.amount), 0);
+  const monthlyExpenses = transactions
+    .filter(t => t.type === 'expense' && new Date(t.date).getMonth() === new Date().getMonth())
+    .reduce((sum, t) => sum + Math.abs(Number(t.amount)), 0);
+  const totalGoals = goals.reduce((sum, goal) => sum + Number(goal.target_amount), 0);
+  const currentSavings = goals.reduce((sum, goal) => sum + Number(goal.current_amount), 0);
 
   const quickStats = [
     {
       title: "Total Balance",
-      value: `$${financialData.totalBalance.toLocaleString()}`,
+      value: `$${totalBalance.toLocaleString()}`,
       change: "+12.5%",
       changeType: "positive" as const,
       icon: <DollarSign className="h-6 w-6" />
     },
     {
       title: "Monthly Income",
-      value: `$${financialData.monthlyIncome.toLocaleString()}`,
+      value: `$${monthlyIncome.toLocaleString()}`,
       change: "+8.2%",
       changeType: "positive" as const,
       icon: <TrendingUp className="h-6 w-6" />
     },
     {
       title: "Monthly Expenses",
-      value: `$${financialData.monthlyExpenses.toLocaleString()}`,
+      value: `$${monthlyExpenses.toLocaleString()}`,
       change: "-3.1%",
       changeType: "negative" as const,
       icon: <TrendingDown className="h-6 w-6" />
     },
     {
       title: "Savings Progress",
-      value: `${Math.round((financialData.currentSavings / financialData.savingsGoal) * 100)}%`,
-      change: `$${financialData.currentSavings.toLocaleString()}`,
+      value: totalGoals > 0 ? `${Math.round((currentSavings / totalGoals) * 100)}%` : "0%",
+      change: `$${currentSavings.toLocaleString()}`,
       changeType: "neutral" as const,
       icon: <Target className="h-6 w-6" />
     }
@@ -114,6 +188,8 @@ const Dashboard = () => {
     { id: 'analytics', label: 'Analytics', icon: <BarChart3 className="h-5 w-5" /> },
     { id: 'goals', label: 'Goals', icon: <Target className="h-5 w-5" /> }
   ];
+
+  const hasData = accounts.length > 0 || transactions.length > 0 || goals.length > 0;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
@@ -135,10 +211,10 @@ const Dashboard = () => {
               <Button variant="ghost" size="sm">
                 <Search className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="sm">
+              <Button variant="ghost" size="sm" onClick={handleNotifications}>
                 <Bell className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="sm">
+              <Button variant="ghost" size="sm" onClick={handleSettings}>
                 <Settings className="h-4 w-4" />
               </Button>
               <Button variant="ghost" size="sm" onClick={handleSignOut}>
@@ -167,80 +243,87 @@ const Dashboard = () => {
           </Button>
         </div>
 
-        {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {quickStats.map((stat, index) => (
-            <Card key={index} className="bg-white/70 backdrop-blur-sm border-0 shadow-lg hover:shadow-xl transition-all duration-300">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600 mb-1">{stat.title}</p>
-                    <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-                    <div className="flex items-center mt-2">
-                      {stat.changeType === 'positive' && <ArrowUpRight className="h-4 w-4 text-green-500 mr-1" />}
-                      {stat.changeType === 'negative' && <ArrowDownRight className="h-4 w-4 text-red-500 mr-1" />}
-                      <span className={cn(
-                        "text-sm font-medium",
-                        stat.changeType === 'positive' && "text-green-600",
-                        stat.changeType === 'negative' && "text-red-600",
-                        stat.changeType === 'neutral' && "text-gray-600"
+        {!hasData ? (
+          <EmptyState onAddTransaction={() => setShowTransactionInput(true)} />
+        ) : (
+          <>
+            {/* Quick Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+              {quickStats.map((stat, index) => (
+                <Card key={index} className="bg-white/70 backdrop-blur-sm border-0 shadow-lg hover:shadow-xl transition-all duration-300">
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-gray-600 mb-1">{stat.title}</p>
+                        <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+                        <div className="flex items-center mt-2">
+                          {stat.changeType === 'positive' && <ArrowUpRight className="h-4 w-4 text-green-500 mr-1" />}
+                          {stat.changeType === 'negative' && <ArrowDownRight className="h-4 w-4 text-red-500 mr-1" />}
+                          <span className={cn(
+                            "text-sm font-medium",
+                            stat.changeType === 'positive' && "text-green-600",
+                            stat.changeType === 'negative' && "text-red-600",
+                            stat.changeType === 'neutral' && "text-gray-600"
+                          )}>
+                            {stat.change}
+                          </span>
+                        </div>
+                      </div>
+                      <div className={cn(
+                        "p-3 rounded-full",
+                        stat.changeType === 'positive' && "bg-green-100 text-green-600",
+                        stat.changeType === 'negative' && "bg-red-100 text-red-600",
+                        stat.changeType === 'neutral' && "bg-blue-100 text-blue-600"
                       )}>
-                        {stat.change}
-                      </span>
+                        {stat.icon}
+                      </div>
                     </div>
-                  </div>
-                  <div className={cn(
-                    "p-3 rounded-full",
-                    stat.changeType === 'positive' && "bg-green-100 text-green-600",
-                    stat.changeType === 'negative' && "bg-red-100 text-red-600",
-                    stat.changeType === 'neutral' && "bg-blue-100 text-blue-600"
-                  )}>
-                    {stat.icon}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
 
-        {/* Tab Navigation */}
-        <div className="flex space-x-1 mb-8 bg-gray-100 p-1 rounded-lg w-fit">
-          {navigationItems.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => setActiveTab(item.id)}
-              className={cn(
-                "flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-all",
-                activeTab === item.id
-                  ? "bg-white text-blue-600 shadow-sm"
-                  : "text-gray-600 hover:text-gray-900"
-              )}
-            >
-              {item.icon}
-              <span>{item.label}</span>
-            </button>
-          ))}
-        </div>
+            {/* Tab Navigation */}
+            <div className="flex space-x-1 mb-8 bg-gray-100 p-1 rounded-lg w-fit">
+              {navigationItems.map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => setActiveTab(item.id)}
+                  className={cn(
+                    "flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-all",
+                    activeTab === item.id
+                      ? "bg-white text-blue-600 shadow-sm"
+                      : "text-gray-600 hover:text-gray-900"
+                  )}
+                >
+                  {item.icon}
+                  <span>{item.label}</span>
+                </button>
+              ))}
+            </div>
 
-        {/* Main Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Charts and Analytics */}
-          <div className="lg:col-span-2 space-y-6">
-            <FinancialChart />
-            {activeTab === 'accounts' && <AccountCards />}
-          </div>
+            {/* Main Content */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {/* Charts and Analytics */}
+              <div className="lg:col-span-2 space-y-6">
+                <FinancialChart transactions={transactions} />
+                {activeTab === 'accounts' && <AccountCards accounts={accounts} onRefresh={fetchData} />}
+              </div>
 
-          {/* Recent Transactions */}
-          <div className="lg:col-span-1">
-            <RecentTransactions />
-          </div>
-        </div>
+              {/* Recent Transactions */}
+              <div className="lg:col-span-1">
+                <RecentTransactions transactions={transactions} />
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Transaction Input Modal */}
       <TransactionInput 
         isOpen={showTransactionInput}
         onClose={() => setShowTransactionInput(false)}
+        onSuccess={fetchData}
       />
     </div>
   );
